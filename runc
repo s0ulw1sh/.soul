@@ -1,0 +1,9 @@
+#!/bin/bash
+
+if [ "$(head -n 1 "$@")" = "#!/bin/bash runc" ]; then
+    sed -n '2,$p' "$@" | gcc -o /tmp/runc.out -x c++ - && /tmp/runc.out
+else
+    gcc "$1" -o /tmp/runc.out && /tmp/runc.out
+fi
+
+rm -f /tmp/runc.out
