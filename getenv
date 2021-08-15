@@ -1,0 +1,49 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]
+then
+	echo "ERROR: No arguments supplied"
+	exit 1
+fi
+
+SOFTPATH=$HOME/soft
+
+if [ -d "${SOFTPATH}/${1}" ]
+then
+	i=0
+
+	for entry in "${SOFTPATH}/${1}"/*
+	do
+		((i=i+1))
+		echo "${i})" $(basename "$entry")
+	done
+
+	if [[ $i -gt 1 ]]
+	then
+		printf "	Select N dir: "
+		read n
+
+		i=0
+
+		for entry in "${SOFTPATH}/${1}"/*
+		do
+			((i=i+1))
+			
+			if [[ $i -eq $n ]]
+			then
+				echo "	Selected " $(basename "$entry")
+				source "${entry}/getenv.sh"
+			fi
+		done
+
+
+	else
+		for entry in "${SOFTPATH}/${1}"/*
+		do
+			echo "	Selected " $(basename "$entry")
+			source "${entry}/getenv.sh"
+		done
+	fi
+fi
+
+bash
