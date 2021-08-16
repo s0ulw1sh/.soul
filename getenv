@@ -6,44 +6,54 @@ then
 	exit 1
 fi
 
-SOFTPATH=$HOME/soft
+SOFTPATH=$HOME/soft/$1
 
-if [ -d "${SOFTPATH}/${1}" ]
+if [ -d "${SOFTPATH}" ]
 then
 	i=0
 
-	for entry in "${SOFTPATH}/${1}"/*
+	for entry in "${SOFTPATH}"/*
 	do
-		((i=i+1))
-		echo "${i})" $(basename "$entry")
+		if [ -d "${entry}" ]
+		then
+			((i=i+1))
+			echo "${i})" $(basename "$entry")
+		fi
 	done
+
+	if [[ $i -eq 0 ]]
+	then
+		echo "WARNING: ${SOFTPATH} is empty"
+		exit 0
+	fi
+
+	i=0
+	n=1
 
 	if [[ $i -gt 1 ]]
 	then
 		printf "	Select N dir: "
 		read n
+	fi
 
-		i=0
-
-		for entry in "${SOFTPATH}/${1}"/*
-		do
+	for entry in "${SOFTPATH}"/*
+	do
+		if [ -d "${entry}" ]
+		then
 			((i=i+1))
-			
 			if [[ $i -eq $n ]]
 			then
-				echo "	Selected " $(basename "$entry")
-				source "${entry}/getenv.sh"
+				if [ -f "${entry}/getenv.sh" ]
+				then
+					echo "	Selected " $(basename "$entry")
+					source "${entry}/getenv.sh"
+				else
+					echo "ERROR: File not found ${entry}/getenv.sh"
+					exit 1
+				fi
 			fi
-		done
-
-
-	else
-		for entry in "${SOFTPATH}/${1}"/*
-		do
-			echo "	Selected " $(basename "$entry")
-			source "${entry}/getenv.sh"
-		done
-	fi
+		fi
+	done
 fi
 
-bash
+$SHELL
