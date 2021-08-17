@@ -47,6 +47,7 @@ then
 				then
 					echo "	Selected " $(basename "$entry")
 					source "${entry}/getenv.sh"
+					$SHELL
 				else
 					echo "ERROR: File not found ${entry}/getenv.sh"
 					exit 1
@@ -54,6 +55,6 @@ then
 			fi
 		fi
 	done
+else
+	echo "Error: ${SOFTPATH} not found"
 fi
-
-$SHELL
