@@ -1,0 +1,88 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]
+then
+	echo "ERROR: No arguments supplied"
+	exit 1
+fi
+
+CMD=$1
+
+if [[ $CMD == "new-ca" ]]; then
+	name="root"
+	days=1000
+	keys=2048
+
+	[ $# -gt 1 ] && name=$2
+	[ $# -gt 2 ] && keys=$3
+	
+	printf "Number of days of the root certificate: "
+	read days
+	
+	openssl genrsa -out "${name}CA.key" $keys
+	openssl req -x509 -new -key "${name}CA.key" -days $days -out "${name}CA.crt"
+	exit 0
+fi
+
+if [[ $CMD == "key" ]]; then
+	name="default.key"
+	keys=2048
+
+	[ $# -gt 1 ] && name=$2
+	[ $# -gt 2 ] && keys=$3
+
+	openssl genrsa -out $name $keys
+	exit 0
+fi
+
+if [[ $CMD == "csr" ]]; then
+	if [ $# -lt 2 ]
+	then
+		echo "ERROR: Invalid number of arguments"
+		echo "Example: myca csr path-to-key.key out-name.csr"
+		exit 1
+	fi
+
+	outname="${2%.*}.csr"
+
+	[ $# -gt 2 ] && outname=$3
+
+	openssl req -new -key $2 -out $outname
+	exit 0
+fi
+
+if [[ $CMD == "crt" ]]; then
+	if [ $# -lt 4 ]
+	then
+		echo "ERROR: Invalid number of arguments"
+		echo "Example: myca crt path-to-ca.crt path-to-ca.key path-to-csr.csr outname days"
+		exit 1
+	fi
+
+	outname="${4%.*}.crt"
+	days=5000
+
+	[ $# -gt 4 ] && outname=$5
+	[ $# -gt 5 ] && days=$6
+
+	openssl x509 -req -in $4 -CA $2 -CAkey $3 -CAcreateserial -out $outname -days $days
+	exit 0
+fi
+
+if [[ $CMD == "new-cert" ]]; then
+	if [ $# -lt 3 ]
+	then
+		echo "ERROR: Invalid number of arguments"
+		echo "Example: myca cert path-to-ca.crt path-to-ca.key out-name"
+		exit 1
+	fi
+
+	days=5000
+	outname=$4
+
+	printf "Number of days of the certificate: "
+	read days
+
+	myca key "${outname}.key" && myca csr "${outname}.key" "${outname}.csr" && myca crt $2 $3 "${outname}.csr" "${outname}.crt" $days
+	exit 0
+fi
