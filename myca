@@ -83,6 +83,6 @@ if [[ $CMD == "new-cert" ]]; then
 	printf "Number of days of the certificate: "
 	read days
 
-	myca key "${outname}.key" && myca csr "${outname}.key" "${outname}.csr" && myca crt $2 $3 "${outname}.csr" "${outname}.crt" $days
+	myca key "${outname}.key" && myca csr "${outname}.key" "${outname}.csr" && myca crt $2 $3 "${outname}.csr" "${outname}.crt" $days && cat "${outname}.key" "${outname}.crt" > "${outname}.pem"
 	exit 0
 fi
