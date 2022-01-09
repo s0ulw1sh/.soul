@@ -27,14 +27,15 @@ then
 		exit 0
 	fi
 
-	i=0
 	n=1
 
 	if [[ $i -gt 1 ]]
 	then
-		printf "	Select N dir: "
+		printf "Select ${1} dir: "
 		read n
 	fi
+
+	i=0
 
 	for entry in "${SOFTPATH}"/*
 	do
@@ -43,15 +44,14 @@ then
 			((i=i+1))
 			if [[ $i -eq $n ]]
 			then
+				echo "Selected ${1}/"$(basename "$entry")
 				if [ -f "${entry}/getenv.sh" ]
 				then
-					echo "	Selected " $(basename "$entry")
 					source "${entry}/getenv.sh"
-					$SHELL
 				else
-					echo "ERROR: File not found ${entry}/getenv.sh"
-					exit 1
+					export PATH=$PATH:${entry}
 				fi
+				$SHELL
 			fi
 		fi
 	done
