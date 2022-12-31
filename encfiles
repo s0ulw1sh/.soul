@@ -19,16 +19,16 @@ pwd=$(echo -n "$password" | argon2 "$swc" -l 1024 -p 4 -t 4 -m 15 -r)
 
 skip=0
 
-for var in $@
+for var in "$@"
 do
   skip="$(($skip-1))"
-  if [ $var = '-p' ]; then
+  if [ "$var" = '-p' ]; then
     skip=2
   fi
 
   if [ $skip -le 0 ]; then
-    if [ -f $var ]; then
-      openssl aes-256-cbc -in $var -out "${var}.enc" -iter 100000 -pass pass:$pwd
+    if [ -f "$var" ]; then
+      openssl aes-256-cbc -in "$var" -out "${var}.enc" -iter 100000 -pass pass:$pwd
     fi
   fi
 done
