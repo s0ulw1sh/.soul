@@ -1,0 +1,15 @@
+#!/bin/bash
+
+dir="$HOME/Videos/shotrec"
+mkdir -p $dir
+
+params=$(flameshot gui -g)
+if test -z "$params"; then
+exit 0
+fi
+
+array=(`echo $params | sed 's/+/\n/g'`)
+echo ${array[1]}
+now=`date "+%F_%H-%M-%S"`
+filename="${dir}/${now}.mp4"
+ffmpeg -video_size "${array[0]}" -framerate 25 -f x11grab -i "${DISPLAY}"+"${array[1]}","${array[2]}" "${filename}"
