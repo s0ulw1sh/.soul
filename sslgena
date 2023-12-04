@@ -1,0 +1,53 @@
+#!/bin/bash
+
+FN=${1^^}
+DIR="${2:-test}"
+
+sslgenaCA () {
+	D="${days:-10950}"
+	R="${rsa:-4096}"
+
+	mkdir "${DIR}" && \
+	mkdir "${DIR}/domains" && \
+	openssl req -x509 -nodes -sha256 -newkey rsa:$R -days $D -keyout "${DIR}/rootCA.key" -out "${DIR}/rootCA.crt"
+}
+
+sslgenaCRT () {
+	D="${days:-730}"
+	R="${rsa:-4096}"
+	DN="${domain:-test.com}"
+	
+	NF="${DIR}/domains/${DN}/info.ss.cnf"
+	PK="${DIR}/domains/${DN}/private.key"
+	PB="${DIR}/domains/${DN}/public.key"
+	SR="${DIR}/domains/${DN}/req.csr"
+	CR="${DIR}/domains/${DN}/x509.crt"
+	CC="${DIR}/rootCA.crt"
+	CK="${DIR}/rootCA.key"
+
+	mkdir "${DIR}/domains/${DN}" && \
+	echo "basicConstraints=CA:FALSE" >> $NF && \
+	echo "subjectAltName=DNS:${DN}" >> $NF && \
+	echo "extendedKeyUsage=serverAuth" >> $NF && \
+	openssl genrsa -out $PK $R && \
+	openssl rsa -in $PK -pubout -out $PB && \
+	openssl req -new -key $PK -extensions v3_ca -out $SR && \
+	openssl x509 -req -sha256 -days $D -in $SR -CA $CC -CAkey $CK -CAcreateserial -extfile $NF -out $CR
+}
+
+# ====================================================================================================
+
+shift
+shift
+
+for ARG in "$@"
+do
+   KEY=$(echo $ARG | cut -f1 -d=)
+
+   KL=${#KEY}
+   VAL="${ARG:$KL+1}"
+
+   export "$KEY"="$VAL"
+done
+
+sslgena$FN
