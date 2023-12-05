@@ -1,21 +1,32 @@
 #!/bin/bash
 
-FN=${1^^}
-DIR="${2:-test}"
-
 sslgenaCA () {
 	D="${days:-10950}"
 	R="${rsa:-4096}"
 
 	mkdir "${DIR}" && \
 	mkdir "${DIR}/domains" && \
+	mkdir "${DIR}/rsa" && \
+	mkdir "${DIR}/ec" && \
 	openssl req -x509 -nodes -sha256 -newkey rsa:$R -days $D -keyout "${DIR}/rootCA.key" -out "${DIR}/rootCA.crt"
+}
+
+sslgenaRECA () {
+	D="${days:-10950}"
+
+	CC="${DIR}/rootCA.crt"
+	CO="${DIR}/rootCA.crt.old"
+	PK="${DIR}/rootCA.key"
+	
+	cat $CC > $CO && \
+	openssl req -x509 -new -nodes -key $PK -sha256 -days $D -out $CC
 }
 
 sslgenaCRT () {
 	D="${days:-730}"
 	R="${rsa:-4096}"
 	DN="${domain:-test.com}"
+	IA="${ca:-FALSE}"
 	
 	NF="${DIR}/domains/${DN}/info.ss.cnf"
 	PK="${DIR}/domains/${DN}/private.key"
@@ -26,7 +37,7 @@ sslgenaCRT () {
 	CK="${DIR}/rootCA.key"
 
 	mkdir "${DIR}/domains/${DN}" && \
-	echo "basicConstraints=CA:FALSE" >> $NF && \
+	echo "basicConstraints=CA:${IA}" >> $NF && \
 	echo "subjectAltName=DNS:${DN}" >> $NF && \
 	echo "extendedKeyUsage=serverAuth" >> $NF && \
 	openssl genrsa -out $PK $R && \
@@ -35,19 +46,66 @@ sslgenaCRT () {
 	openssl x509 -req -sha256 -days $D -in $SR -CA $CC -CAkey $CK -CAcreateserial -extfile $NF -out $CR
 }
 
-# ====================================================================================================
+sslgenaRECRT () {
+	D="${days:-730}"
+	DN="${domain:-test.com}"
 
-shift
+	NF="${DIR}/domains/${DN}/info.ss.cnf"
+	SR="${DIR}/domains/${DN}/req.csr"
+	CR="${DIR}/domains/${DN}/x509.crt"
+	CO="${DIR}/domains/${DN}/x509.crt.old"
+	CC="${DIR}/rootCA.crt"
+	CK="${DIR}/rootCA.key"
+	
+	cat $CR > $CO && \
+	openssl x509 -req -sha256 -days $D -in $SR -CA $CC -CAkey $CK -CAcreateserial -extfile $NF -out $CR
+}
+
+sslgenaRSA () {
+	R="${rsa:-4096}"
+	N="${name:-test}"
+	F="${form^^:-PEM}"
+
+	PK="${DIR}/rsa/${N}/private.key"
+	PB="${DIR}/rsa/${N}/public.key"
+
+	mkdir "${DIR}/rsa/${N}" && \
+	openssl genrsa -out $PK $R && \
+	openssl rsa -in $PK -pubout -out $PB
+}
+
+sslgenaEC () {
+	N="${name:-test}"
+	C="${curve:-prime256v1}"
+
+	PK="${DIR}/ec/${N}/private.key"
+	PB="${DIR}/ec/${N}/public.key"
+	
+	mkdir "${DIR}/ec/${N}" && \
+	openssl ecparam -name $C -genkey -noout -out $PK && \
+	openssl ec -in $PK -pubout -out $PB
+}
+
+#=====================
+
+FN=${1^^}
+
 shift
 
 for ARG in "$@"
 do
-   KEY=$(echo $ARG | cut -f1 -d=)
+	KEY=$(echo $ARG | cut -f1 -d=)
 
-   KL=${#KEY}
-   VAL="${ARG:$KL+1}"
+	KL=${#KEY}
+	VAL="${ARG:$KL+1}"
+	
+	if [ -z "${VAL}" ]; then
+		export "DIR"="$KEY"
+	fi
 
-   export "$KEY"="$VAL"
+	export "$KEY"="$VAL"
 done
+
+DIR="${DIR:-$HOME/.xca}"
 
 sslgena$FN
